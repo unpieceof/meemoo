@@ -30,4 +30,9 @@ def route(text: str) -> tuple[str, str]:
     if re.match(r"https?://", text):
         return "analyst", text
 
+    # Text containing URL -> analyst (save with context)
+    url_match = re.search(r"https?://\S+", text)
+    if url_match:
+        return "analyst", text
+
     return "unknown", text

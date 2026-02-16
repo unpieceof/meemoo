@@ -41,6 +41,8 @@ ROUTE_COMMANDS = {
     "save": "analyst",
     "list": "librarian",
     "search": "librarian",
+    "category": "librarian",
+    "view": "librarian",
     "delete": "librarian",
     "recommend": "recommender",
     "verbose": "setting",

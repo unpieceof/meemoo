@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -17,6 +18,7 @@ from .workers import analyst_run, librarian_run, recommender_run
 from . import formatter as fmt
 from . import supabase_client
 from .scheduler import setup_scheduler
+from .banter import maybe_banter
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -57,6 +59,8 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         # ── Pipeline ──
+        is_night = datetime.now(timezone.utc).hour >= 14  # UTC 14 = KST 23
+
         if action == "analyst":
             # 🎯 Router -> 🔍 Analyst -> 📚 Librarian
             analyst_result = analyst_run(payload)
@@ -64,13 +68,38 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 await _send(update, fmt.fmt_verbose_step("🔍 Analyst", analyst_result))
                 await _send(update, fmt.fmt_analyst(analyst_result))
 
+            # 🎭 Banter after analysis
+            banter = maybe_banter({
+                "stage": "after_analysis", "intent": "save",
+                "source_type": analyst_result.get("source_type", ""),
+                "is_night": is_night, "duplicate": False,
+                "category": analyst_result.get("category", ""),
+                "tag_count": len(analyst_result.get("tags", [])),
+                "title": analyst_result.get("title", ""),
+            })
+            if banter:
+                await _send(update, f"🎭 {banter}")
+
             lib_result = librarian_run("save:", analyst_result=analyst_result)
             if verbose:
                 await _send(update, fmt.fmt_verbose_step("📚 Librarian", lib_result))
 
-            await _send(update, fmt.fmt_saved(lib_result))
-            if not verbose:
-                await _send(update, fmt.fmt_analyst(analyst_result))
+            if lib_result.get("action") == "duplicate":
+                dup_banter = maybe_banter({
+                    "stage": "after_store", "intent": "duplicate",
+                    "source_type": analyst_result.get("source_type", ""),
+                    "is_night": is_night, "duplicate": True,
+                    "category": analyst_result.get("category", ""),
+                    "tag_count": len(analyst_result.get("tags", [])),
+                    "title": analyst_result.get("title", ""),
+                })
+                await _send(update, fmt.fmt_duplicate(lib_result))
+                if dup_banter:
+                    await _send(update, f"🎭 {dup_banter}")
+            else:
+                await _send(update, fmt.fmt_saved(lib_result))
+                if not verbose:
+                    await _send(update, fmt.fmt_analyst(analyst_result))
             return
 
         if action == "librarian":
@@ -84,6 +113,12 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 await _send(update, fmt.fmt_list(lib_result))
             elif act == "search":
                 await _send(update, fmt.fmt_search(lib_result))
+            elif act == "category_list":
+                await _send(update, fmt.fmt_category_list(lib_result))
+            elif act == "category":
+                await _send(update, fmt.fmt_category(lib_result))
+            elif act == "view":
+                await _send(update, fmt.fmt_view(lib_result))
             elif act == "delete":
                 await _send(update, fmt.fmt_delete(lib_result))
             else:
@@ -102,14 +137,19 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await _send(update, fmt.fmt_error(f"오류 발생: {e}"))
 
 
-def main() -> None:
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+async def _post_init(app: Application) -> None:
     setup_scheduler(app)
+
+
+def main() -> None:
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).post_init(_post_init).build()
     app.add_handler(CommandHandler("help", _handle))
     app.add_handler(CommandHandler("start", _handle))
     app.add_handler(CommandHandler("save", _handle))
     app.add_handler(CommandHandler("list", _handle))
     app.add_handler(CommandHandler("search", _handle))
+    app.add_handler(CommandHandler("category", _handle))
+    app.add_handler(CommandHandler("view", _handle))
     app.add_handler(CommandHandler("delete", _handle))
     app.add_handler(CommandHandler("recommend", _handle))
     app.add_handler(CommandHandler("verbose", _handle))
