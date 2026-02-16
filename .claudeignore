@@ -1,0 +1,26 @@
+# secrets
+.env
+.env.*
+**/*.pem
+**/*.key
+**/*secret*
+**/*credentials*
+**/*service-role*
+**/.aws/**
+**/.ssh/**
+
+# big/noisy
+**/.git/**
+**/node_modules/**
+**/.venv/**
+**/__pycache__/**
+**/.pytest_cache/**
+**/.ruff_cache/**
+**/dist/**
+**/build/**
+**/*.log
+**/*.sqlite
+**/*.db
+**/*.parquet
+**/*.csv
+**/*.jsonl
