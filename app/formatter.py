@@ -42,30 +42,40 @@ def fmt_search(data: dict) -> str:
     lines = [f"🔍 *검색: {_esc(q)}*\n"]
 
     for m in memos:
-        # ✅ decorate가 만든 표시용 필드 우선
-        title = (m.get("display_title") or m.get("title") or "").strip()
-        preview = (m.get("display_preview") or "").strip()
-        date = (m.get("display_date") or "").strip()
+        # display_title 예: "📘 [배움 · Agent Skills] 실제제목"
+        display_title = (m.get("display_title") or "").strip()
+        raw_title = (m.get("title") or "").strip()
 
-        # id는 계속 보여주고 싶으면 유지
+        date = (m.get("display_date") or "").strip()
         mid8 = (m.get("id") or "")[:8]
 
-        # 제목 라인: date / id 같이 붙이기
-        suffix_parts = [p for p in [date, mid8] if p]
-        suffix = ("  " + "  ".join(suffix_parts)) if suffix_parts else ""
+        # ---- 제목 처리 ----
+        if display_title:
+            # prefix 부분은 그대로 두고,
+            # 실제 title 텍스트만 escape 적용
+            # → 마지막 raw_title 부분만 교체
+            safe_title = display_title.replace(raw_title, _esc(raw_title))
+        else:
+            safe_title = _esc(raw_title)
 
-        lines.append(f"  • *{_esc(title)}*{_esc(suffix)}")
+        # ---- suffix (날짜 + id코드) ----
+        suffix_parts = []
+        if date:
+            suffix_parts.append(date)
+        if mid8:
+            suffix_parts.append(f"`{mid8}`")  # ← 코드블럭 처리
 
+        suffix = "  " + "  ".join(suffix_parts) if suffix_parts else ""
+
+        lines.append(f"  • {safe_title}{suffix}")
+
+        # ---- preview ----
+        preview = (m.get("display_preview") or "").strip()
         if preview:
             lines.append(f"    _{_esc(preview)}_")
-        else:
-            # fallback: summary_bullets 1개만 짧게
-            bullets = m.get("summary_bullets", [])
-            if bullets:
-                fb = str(bullets[0]).strip()[:80]
-                lines.append(f"    _{_esc(fb)}_")
 
     return "\n".join(lines)
+
 
 
 
@@ -149,17 +159,20 @@ def fmt_error(msg: str) -> str:
 
 def fmt_help() -> str:
     return (
-        "📖 *사용법*\n\n"
-        "• URL 보내기 → 자동 분석 & 저장\n"
-        "• 텍스트 + URL → 메모와 함께 저장\n"
-        "• `/save <URL>` → 분석 & 저장\n"
-        "• `/list` → 메모 목록\n"
-        "• `/search <키워드>` → 검색\n"
-        "• `/category <이름>` → 카테고리별 보기\n"
-        "• `/view <id>` → 메모 상세보기\n"
-        "• `/delete <id>` → 삭제\n"
-        "• `/recommend` → 추천\n"
-        "• `/verbose on|off` → 단계별 메시지 표시"
+        """📖 이렇게 쓰면 돼요
+
+• 링크 보내면 → 자동 분석해서 저장해요
+• 메모만 보내도 → 정리해서 저장해요
+
+🔎 찾기
+• /search 키워드 → 메모 검색
+• /list → 최근 메모 보기
+• /category 이름 → 카테고리별 보기
+
+📂 관리
+• /view id → 자세히 보기
+• /delete id → 삭제
+"""
     )
 
 

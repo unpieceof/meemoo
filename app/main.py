@@ -44,7 +44,7 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     log.info("chat=%s action=%s payload=%s", chat_id, action, payload[:80])
 
     try:
-        if action == "help":
+        if action in ("help", "start"):
             await _send(update, fmt.fmt_help())
             return
 
