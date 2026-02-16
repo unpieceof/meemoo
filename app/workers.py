@@ -184,7 +184,7 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
             seen.add(mid)
             memos.append(_decorate(m))
     
-        return {"action": "search", "query": payload, "memos": memos}
+        return {"action": "search", "query": payload, "memos": memos[:3]}
 
     if action == "category":
         if not payload:
