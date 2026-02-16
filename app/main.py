@@ -63,16 +63,17 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
         # Instant status message
         _status = {
-            "analyst": "📝 메모 저장 중...",
+            "analyst": "🔍 분석가: 핵심 정리 중...",
             "librarian": {
-                "list": "📚 목록 불러오는 중...",
-                "search": "🔍 검색 중...",
-                "category": "📂 카테고리 조회 중...",
-                "view": "📄 메모 불러오는 중...",
-                "delete": "🗑 삭제 중...",
+                "list": "📚 사서: 목록 정리해서 꺼내는 중...",
+                "search": "📚 사서: 색인 뒤지는 중...",
+                "category": "📚 사서: 분류표 확인 중...",
+                "view": "📚 사서: 해당 메모 찾는 중...",
+                "delete": "📚 사서: 기록 정리 중...",
             },
-            "recommender": "💡 추천 생성 중...",
+            "recommender": "💡 큐레이터: 연결 고리 탐색 중...",
         }
+
         if action == "analyst":
             await _send(update, _status["analyst"])
         elif action == "librarian":

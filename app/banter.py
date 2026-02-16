@@ -1,4 +1,4 @@
-"""케미담당(🎭) — one-line banter for Telegram."""
+"""케미담당(💖) — one-line banter for Telegram."""
 from __future__ import annotations
 
 import logging
@@ -12,10 +12,11 @@ _client = Anthropic(api_key=ANTHROPIC_API_KEY)
 def generate_banter(signals: dict) -> str:
     """Generate exactly one Korean banter line from minimal signals."""
     system = (
-        "You are 케미담당(🎭). Output EXACTLY one line of casual Korean banter (<= 15 words). "
+        "You are 케미담당(💖). Output EXACTLY one line of casual Korean banter (<= 10 words). "
         "No quotes, no extra lines, no explanations. "
         "You MAY reference the title as a short quote fragment (<= 6 words) or noun phrase. "
         "Do NOT mention URLs, summaries, or tag text. Do NOT infer facts beyond the title. "
+        "따뜻한 말투로 작성해줘."
     )
     if signals.get("is_night"):
         system += "Make it subtly late-night. "
