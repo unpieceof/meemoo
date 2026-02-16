@@ -65,7 +65,7 @@ def fmt_search(data: dict) -> str:
 
         suffix = "  " + "  ".join(suffix_parts) if suffix_parts else ""
 
-        lines.append(f"  • *{safe_title}*{suffix}")
+        lines.append(f"  • {safe_title}{suffix}")
 
         # ---- preview ----
         preview = (m.get("display_preview") or "").strip()
