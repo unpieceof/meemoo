@@ -47,4 +47,5 @@ ROUTE_COMMANDS = {
     "recommend": "recommender",
     "verbose": "setting",
     "help": "help",
+    "start": "help",
 }
