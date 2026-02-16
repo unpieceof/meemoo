@@ -47,8 +47,6 @@ def fmt_search(data: dict) -> str:
         # display_title 예: "📘 [배움 · Agent Skills] 실제제목"
         display_title = (m.get("display_title") or "").strip()
         raw_title = (m.get("title") or "").strip()
-
-        date = (m.get("display_date") or "").strip()
         mid8 = (m.get("id") or "")[:8]
 
         # ---- 제목 처리 ----
@@ -62,21 +60,19 @@ def fmt_search(data: dict) -> str:
 
         # ---- suffix (날짜 + id코드) ----
         suffix_parts = []
-        if date:
-            suffix_parts.append(date)
         if mid8:
             suffix_parts.append(f"`{mid8}`")  # ← 코드블럭 처리
 
         suffix = "  " + "  ".join(suffix_parts) if suffix_parts else ""
 
-        lines.append(f"  • {safe_title}{suffix}")
+        lines.append(f"  • *{safe_title}*{suffix}")
 
         # ---- preview ----
         preview = (m.get("display_preview") or "").strip()
         if preview:
             lines.append(f"    _{_esc(preview)}_")
 
-    return "\n".join(lines)
+    return "\n\n".join(lines)
 
 
 
