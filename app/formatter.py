@@ -70,9 +70,9 @@ def fmt_search(data: dict) -> str:
         # ---- preview ----
         preview = (m.get("display_preview") or "").strip()
         if preview:
-            lines.append(f"    _{_esc(preview)}_")
+            lines.append(f"    _{_esc(preview)}_\n")
 
-    return "\n\n".join(lines)
+    return "\n".join(lines)
 
 
 
