@@ -29,7 +29,8 @@ def fmt_list(data: dict) -> str:
         return "📚 저장된 메모가 없습니다."
     lines = []
     for i, m in enumerate(memos, 1):
-        lines.append(f"{i}. *{_esc(m.get('title',''))}*\n   `{m.get('id','')}`")
+        tags = " ".join(f"#{t}" for t in m.get("tags", []))
+        lines.append(f"{i}. *[{m.get("category"}] {_esc(m.get('title',''))}*\n   `{m.get('id','')}`\n   {tags}")
     return "📚 *메모 목록*\n\n" + "\n".join(lines)
 
 
