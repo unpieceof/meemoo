@@ -35,4 +35,12 @@ def route(text: str) -> tuple[str, str]:
     if url_match:
         return "analyst", text
 
+    # Bare domain (e.g. "griddyicons.com") -> analyst
+    if re.search(r"\b[\w-]+\.(com|net|org|io|co|dev|ai|kr|me|app|xyz)\b", text, re.I):
+        return "analyst", text
+
+    # Any text longer than 10 chars -> treat as memo save
+    if len(text) > 10:
+        return "analyst", text
+
     return "unknown", text

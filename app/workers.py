@@ -84,7 +84,12 @@ def analyst_run(payload: str) -> dict:
     """Extract URL (with optional user context) -> call Claude -> return analysis JSON."""
     url_match = re.search(r"https?://\S+", payload)
     url = url_match.group(0) if url_match else ""
-    user_context = payload.replace(url, "").strip() if url else payload
+    # Detect bare domain (e.g. griddyicons.com) and prepend https://
+    if not url:
+        domain_match = re.search(r"\b([\w-]+\.(?:com|net|org|io|co|dev|ai|kr|me|app|xyz))\b", payload, re.I)
+        if domain_match:
+            url = f"https://{domain_match.group(1)}"
+    user_context = payload.replace(url_match.group(0) if url_match else "", "").strip() if url else payload
 
     source_type, extracted = extractor.extract_text(url) if url else ("web", "")
 
