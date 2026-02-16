@@ -20,22 +20,38 @@ ANALYST_SCHEMA = {
 RECOMMENDER_SCHEMA = {
     "type": "object",
     "properties": {
-        "recommendations": {
+        "categories": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
-                    "memo_id": {"type": "string"},
-                    "reason": {"type": "string"},
+                    "category": {"type": "string"},      # 예: "배움", "정보" 또는 모델이 재가공한 카테고리명
+                    "emoji": {"type": "string"},
+                    "one_liner": {"type": "string"},
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "memo_id": {"type": "string"},
+                                "title": {"type": "string"},
+                                "preview": {"type": "string"},  # summary_bullets에서 한 줄 뽑기
+                                "hook": {"type": "string"},     # 자극적 한 줄
+                                "reason": {"type": "string"},
+                                "tags": {"type": "array", "items": {"type": "string"}},
+                                "confidence": {"type": "number"}
+                            },
+                            "required": ["memo_id", "title", "preview", "hook", "reason"]
+                        }
+                    }
                 },
-                "required": ["memo_id", "reason"],
-                "additionalProperties": False,
-            },
+                "required": ["category", "emoji", "one_liner", "items"]
+            }
         }
     },
-    "required": ["recommendations"],
-    "additionalProperties": False,
+    "required": ["categories"]
 }
+
 
 ROUTE_COMMANDS = {
     "save": "analyst",

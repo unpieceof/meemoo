@@ -136,13 +136,42 @@ def fmt_view(data: dict) -> str:
 
 
 def fmt_recommend(data: dict) -> str:
-    recs = data.get("recommendations", [])
-    if not recs:
-        return "💡 추천할 메모가 없습니다."
-    lines = ["💡 *추천 메모*\n"]
-    for r in recs:
-        lines.append(f"  • `{r['memo_id'][:8]}` — {r['reason']}")
-    return "\n".join(lines)
+    cats = data.get("categories", [])
+    if not cats:
+        return "💡 추천할 메모가 아직 없어…"
+
+    lines = ["💡 *오늘 다시 보면 이득 보는 메모들* 🔥\n"]
+    for c in cats:
+        emoji = c.get("emoji", "💡")
+        category = c.get("category", "추천")
+        one_liner = c.get("one_liner", "")
+
+        lines.append(f"{emoji} *{category}*")
+        if one_liner:
+            lines.append(f"> {one_liner}")
+
+        for it in c.get("items", []):
+            memo_id = it["memo_id"][:8]
+            title = it.get("title", "").strip()
+            preview = it.get("preview", "").strip()
+            hook = it.get("hook", "").strip()
+            reason = it.get("reason", "").strip()
+            tags = it.get("tags", []) or []
+
+            lines.append(f"  • `{memo_id}` **{title}**")
+            if hook:
+                lines.append(f"    - {hook}")
+            if preview:
+                lines.append(f"    - _미리보기_: {preview}")
+            if tags:
+                lines.append(f"    - 태그: " + ", ".join([f"`{t}`" for t in tags[:4]]))
+            if reason:
+                lines.append(f"    - 왜 지금?: {reason}")
+
+        lines.append("")
+
+    return "\n".join(lines).rstrip()
+
 
 
 def fmt_duplicate(data: dict) -> str:
@@ -168,6 +197,7 @@ def fmt_help() -> str:
 • /search 키워드 → 메모 검색
 • /list → 최근 메모 보기
 • /category 이름 → 카테고리별 보기
+• /recommend → 랜덤 메모 추천
 
 📂 관리
 • /view id → 자세히 보기

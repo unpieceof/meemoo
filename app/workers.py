@@ -202,17 +202,33 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
 
 # ── Recommender (💡) ────────────────────────────────────────
 def recommender_run(payload: str) -> dict:
-    """Recommend memos based on existing metadata. Only when explicitly requested."""
+    """Recommend memos grouped by category. Only when explicitly requested."""
     metas = supabase_client.get_all_memos_meta()
     if not metas:
-        return {"recommendations": []}
+        return {"categories": []}
+
     result = claude_client.ask_json(
         system=(
-            "You are a recommender. Given a list of saved memos (JSON), "
-            "pick top 3 the user might want to revisit. "
-            "Return recommendations with memo_id and short Korean reason."
+            "너는 '메모 추천 큐레이터'야.\n"
+            "입력은 메모 목록(JSON 배열)이고, 각 메모는 id/title/summary_bullets/category/tags 등을 가진다.\n\n"
+            "목표: 사용자가 지금 다시 보면 좋을 메모를 '카테고리별'로 추천 결과(JSON)로 반환.\n\n"
+            "규칙:\n"
+            "1) 먼저 memo.category를 기준으로 묶어. (예: 배움/정보)\n"
+            "   - category가 너무 넓으면 tags를 참고해서 카테고리명을 더 직관적으로 바꿔도 됨.\n"
+            "2) 카테고리는 2~5개.\n"
+            "3) 각 카테고리에는 emoji 1개, one_liner(자극적인 한 줄 소개) 1개.\n"
+            "4) 각 카테고리 items는 1~3개.\n"
+            "5) 각 item에는:\n"
+            "   - memo_id: 입력의 id 그대로\n"
+            "   - title: 입력의 title 그대로\n"
+            "   - preview: summary_bullets 중에서 가장 '아 이거!' 싶은 1개를 골라 한 줄로\n"
+            "   - hook: 커뮤니티 말투로 다시 보고 싶게 한 줄 (허위/과장 금지)\n"
+            "   - reason: 짧고 직관적으로 왜 지금 봐야 하는지\n"
+            "   - tags: 입력 tags 중 핵심 2~4개만\n"
+            "6) 말투: 친근 + 살짝 자극(커뮤니티 톤 가능). 근데 정보는 정확해야 함.\n"
         ),
         user=json.dumps(metas, ensure_ascii=False),
         schema=RECOMMENDER_SCHEMA,
     )
     return result
+
