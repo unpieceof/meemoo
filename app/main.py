@@ -15,6 +15,8 @@ from .config import TELEGRAM_TOKEN, VERBOSE_DEFAULT
 from .router import route
 from .workers import analyst_run, librarian_run, recommender_run
 from . import formatter as fmt
+from . import supabase_client
+from .scheduler import setup_scheduler
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -31,6 +33,10 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_chat.id
     text = update.message.text or ""
     verbose = _verbose.get(chat_id, VERBOSE_DEFAULT)
+
+    # Register user on every message
+    user = update.effective_user
+    supabase_client.upsert_user(chat_id, user.username if user else None)
 
     action, payload = route(text)
     log.info("chat=%s action=%s payload=%s", chat_id, action, payload[:80])
@@ -98,6 +104,7 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 def main() -> None:
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    setup_scheduler(app)
     app.add_handler(CommandHandler("help", _handle))
     app.add_handler(CommandHandler("start", _handle))
     app.add_handler(CommandHandler("save", _handle))

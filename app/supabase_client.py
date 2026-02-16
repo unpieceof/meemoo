@@ -52,3 +52,19 @@ def get_all_memos_meta() -> list[dict]:
         .execute()
         .data
     )
+
+
+# ── Users ────────────────────────────────────────────────────
+USERS_TABLE = "users"
+
+
+def upsert_user(chat_id: int, username: str | None = None) -> None:
+    """Register or update user chat_id."""
+    row = {"chat_id": chat_id}
+    if username:
+        row["username"] = username
+    _sb.table(USERS_TABLE).upsert(row, on_conflict="chat_id").execute()
+
+
+def list_users() -> list[dict]:
+    return _sb.table(USERS_TABLE).select("chat_id").execute().data
