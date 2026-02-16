@@ -30,7 +30,8 @@ def fmt_list(data: dict) -> str:
     lines = []
     for i, m in enumerate(memos, 1):
         tags = " ".join(f"#{t}" for t in m.get("tags", []))
-        lines.append(f"{i}. *[{m.get("category"}] {_esc(m.get('title',''))}*\n   `{m.get('id','')}`\n   {tags}")
+        cat = m.get('category', '')
+        lines.append(f"{i}. *[{cat}] {_esc(m.get('title',''))}*\n   `{m.get('id','')}`\n   {tags}")
     return "📚 *메모 목록*\n\n" + "\n".join(lines)
 
 
