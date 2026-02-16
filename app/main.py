@@ -61,6 +61,26 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         # ── Pipeline ──
         is_night = datetime.now(timezone.utc).hour >= 14  # UTC 14 = KST 23
 
+        # Instant status message
+        _status = {
+            "analyst": "📝 메모 저장 중...",
+            "librarian": {
+                "list": "📚 목록 불러오는 중...",
+                "search": "🔍 검색 중...",
+                "category": "📂 카테고리 조회 중...",
+                "view": "📄 메모 불러오는 중...",
+                "delete": "🗑 삭제 중...",
+            },
+            "recommender": "💡 추천 생성 중...",
+        }
+        if action == "analyst":
+            await _send(update, _status["analyst"])
+        elif action == "librarian":
+            sub = payload.partition(":")[0]
+            await _send(update, _status["librarian"].get(sub, "⏳ 처리 중..."))
+        elif action == "recommender":
+            await _send(update, _status["recommender"])
+
         if action == "analyst":
             # 🎯 Router -> 🔍 Analyst -> 📚 Librarian
             analyst_result = analyst_run(payload)
