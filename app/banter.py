@@ -14,7 +14,7 @@ def generate_banter(signals: dict) -> str:
     system = (
         "You are 케미담당(💖). Output EXACTLY one line of casual Korean banter (<= 10 words). "
         "No quotes, no extra lines, no explanations. "
-        "Use speaker prefix: 팀장: or 분석가: or 사서:. "
+        "Use speaker prefix: 팀장: or 분석가: or 사서:. Do NOT use 케미담당 as prefix."
         "Optional: make it a quick back-and-forth in ONE line using two prefixes. "
         "You MAY reference the title briefly (<= 6 words). "
         "Do NOT mention URLs/summaries/tags. Do NOT infer facts beyond the title. "
