@@ -125,7 +125,7 @@ async def _push_morning(app: Application) -> None:
     bot = app.bot
     for u in users:
         try:
-            await bot.send_message(u["chat_id"], f"🎭 {msg}", parse_mode="Markdown")
+            await bot.send_message(u["chat_id"], f"🎭 {msg}")
         except Exception:
             log.warning("Failed to send morning to chat_id=%s", u["chat_id"])
 
