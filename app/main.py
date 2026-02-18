@@ -55,6 +55,16 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await _send(update, f"🔧 Verbose 모드: `{'ON' if on else 'OFF'}`")
             return
 
+        if action == "sms":
+            from .banter import generate_sms
+            try:
+                msg = generate_sms()
+                await _send(update, f"🎭 {msg}")
+            except Exception as e:
+                log.exception("SMS banter failed")
+                await _send(update, fmt.fmt_error(f"오류 발생: {e}"))
+            return
+
         if action == "unknown":
             await _send(update, fmt.fmt_error("알 수 없는 명령입니다. /help 를 확인하세요."))
             return
@@ -207,6 +217,7 @@ def main() -> None:
     app.add_handler(CommandHandler("delete", _handle))
     app.add_handler(CommandHandler("recommend", _handle))
     app.add_handler(CommandHandler("verbose", _handle))
+    app.add_handler(CommandHandler("sms", _handle))
     app.add_handler(CallbackQueryHandler(_page_callback, pattern=r"^(list|search):"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _handle))
     log.info("Bot started")

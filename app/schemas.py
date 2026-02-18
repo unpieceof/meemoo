@@ -64,6 +64,7 @@ ROUTE_COMMANDS = {
     "delete": "librarian",
     "recommend": "recommender",
     "verbose": "setting",
+    "sms": "sms",
     "help": "help",
     "start": "help",
 }

@@ -45,6 +45,27 @@ def generate_banter(signals: dict) -> str:
     return resp.content[0].text.strip().split("\n")[0].strip()
 
 
+def generate_sms() -> str:
+    """Generate a random one-liner about date/time/weather with character vibe."""
+    from datetime import datetime, timezone, timedelta
+    kst = datetime.now(timezone(timedelta(hours=9)))
+    time_info = kst.strftime("%m월 %d일 %A %H:%M")
+
+    resp = _client.messages.create(
+        model=CLAUDE_MODEL,
+        max_tokens=60,
+        system=(
+            "You are 케미담당(💖). Output EXACTLY one line of casual Korean (10~25자). "
+            "No quotes, no extra lines, no explanations. "
+            "Use speaker prefix: 팀장: or 분석가: or 사서:. "
+            "날짜/시간/계절/날씨 중 하나를 소재로 캐릭터성 있는 한 마디. "
+            "Warm, witty, slightly poetic."
+        ),
+        messages=[{"role": "user", "content": f"지금: {time_info}"}],
+    )
+    return resp.content[0].text.strip().split("\n")[0].strip()
+
+
 def maybe_banter(signals: dict) -> str | None:
     """Always return banter for memo inputs."""
     try:
