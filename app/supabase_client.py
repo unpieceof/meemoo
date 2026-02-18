@@ -45,13 +45,6 @@ def search_memos_text(query: str, limit: int = 5, offset: int = 0) -> tuple[list
     return rows, total
 
 
-def search_memos_vector(query_embedding: list[float], threshold: float = 0.1, limit: int = 10) -> list[dict]:
-    """Vector similarity search via pgvector."""
-    return _sb.rpc(
-        "match_memos",
-        {"query_embedding": query_embedding, "match_threshold": threshold, "match_count": limit},
-    ).execute().data
-
 
 def find_by_url(url: str) -> dict | None:
     """Check if memo with this source_url already exists."""

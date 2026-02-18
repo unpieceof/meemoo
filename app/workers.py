@@ -5,19 +5,11 @@ import json
 import re
 from datetime import datetime, timezone
 
-from . import claude_client, supabase_client, extractor, embeddings
+from . import claude_client, supabase_client, extractor
 from .schemas import ANALYST_SCHEMA, RECOMMENDER_SCHEMA
 
 PAGE_SIZE = 5
 
-
-def _memo_text(result: dict) -> str:
-    """Build searchable text for embedding from analyst result."""
-    parts = [result.get("title", "")]
-    parts.extend(result.get("bullets", []))
-    parts.append(result.get("category", ""))
-    parts.extend(result.get("tags", []))
-    return " ".join(parts)
 
 # Librarian Search용 function ────────────────────────────────────────────
 CATEGORY_ICON = {
@@ -145,10 +137,6 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
         if not src_url:
             src_url = f"memo://{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
 
-        # Generate embedding
-        embed_text = _memo_text(analyst_result)
-        emb = embeddings.embed_one(embed_text)
-
         memo = {
             "title": analyst_result["title"],
             "summary_bullets": analyst_result["bullets"],
@@ -157,7 +145,6 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
             "source_url": src_url,
             "source_type": analyst_result["source_type"],
             "raw_content": analyst_result.get("_raw_content", "")[:8000],
-            "embedding": emb,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         saved = supabase_client.upsert_memo(memo)
