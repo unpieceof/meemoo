@@ -13,15 +13,21 @@ def upsert_memo(memo: dict) -> dict:
     return _sb.table(TABLE).upsert(memo, on_conflict="source_url").execute().data
 
 
-def list_memos(limit: int = 20) -> list[dict]:
+def list_memos(limit: int = 20, offset: int = 0) -> list[dict]:
     return (
         _sb.table(TABLE)
         .select("id,title,summary_bullets,category,tags,source_url,source_type,created_at")
         .order("created_at", desc=True)
-        .limit(limit)
+        .range(offset, offset + limit - 1)
         .execute()
         .data
     )
+
+
+def count_memos() -> int:
+    """Return total memo count."""
+    res = _sb.table(TABLE).select("id", count="exact").execute()
+    return res.count or 0
 
 
 def search_memos_text(query: str) -> list[dict]:
@@ -106,10 +112,10 @@ def get_category_counts() -> list[dict]:
 
 
 def get_all_memos_meta() -> list[dict]:
-    """Lightweight fetch for recommender (id, title, category, tags only)."""
+    """Lightweight fetch for recommender."""
     return (
         _sb.table(TABLE)
-        .select("id,title,category,tags")
+        .select("id,title,summary_bullets,category,tags")
         .order("created_at", desc=True)
         .limit(50)
         .execute()

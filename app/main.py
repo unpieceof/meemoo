@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from telegram import Update
+from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import (
     ApplicationBuilder,
+    CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
     ContextTypes,
@@ -14,7 +15,7 @@ from telegram.ext import (
 
 from .config import TELEGRAM_TOKEN, VERBOSE_DEFAULT
 from .router import route
-from .workers import analyst_run, librarian_run, recommender_run
+from .workers import analyst_run, librarian_run, recommender_run, PAGE_SIZE
 from . import formatter as fmt
 from . import supabase_client
 from .scheduler import setup_scheduler
@@ -27,8 +28,8 @@ log = logging.getLogger(__name__)
 _verbose: dict[int, bool] = {}
 
 
-async def _send(update: Update, text: str) -> None:
-    await update.message.reply_text(text, parse_mode="Markdown")
+async def _send(update: Update, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
+    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=reply_markup)
 
 
 async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -131,9 +132,11 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
             act = lib_result.get("action", "")
             if act == "list":
-                await _send(update, fmt.fmt_list(lib_result))
+                kb = fmt.build_page_keyboard("list", lib_result.get("page", 0), lib_result.get("total", 0), PAGE_SIZE)
+                await _send(update, fmt.fmt_list(lib_result), reply_markup=kb)
             elif act == "search":
-                await _send(update, fmt.fmt_search(lib_result))
+                kb = fmt.build_page_keyboard("search", lib_result.get("page", 0), lib_result.get("total", 0), PAGE_SIZE, query=lib_result.get("query"))
+                await _send(update, fmt.fmt_search(lib_result), reply_markup=kb)
             elif act == "category_list":
                 await _send(update, fmt.fmt_category_list(lib_result))
             elif act == "category":
@@ -158,6 +161,36 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await _send(update, fmt.fmt_error(f"오류 발생: {e}"))
 
 
+async def _page_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle inline keyboard pagination button presses."""
+    query = update.callback_query
+    await query.answer()
+    data = query.data or ""
+
+    try:
+        if data.startswith("list:"):
+            # "list:{page}"
+            page = int(data.split(":")[1])
+            lib_result = librarian_run(f"list:{page}")
+            text = fmt.fmt_list(lib_result)
+            kb = fmt.build_page_keyboard("list", lib_result.get("page", 0), lib_result.get("total", 0), PAGE_SIZE)
+        elif data.startswith("search:"):
+            # "search:{query}:{page}"
+            parts = data.split(":")
+            page = int(parts[-1])
+            search_query = ":".join(parts[1:-1])
+            lib_result = librarian_run(f"search:{search_query}:{page}")
+            text = fmt.fmt_search(lib_result)
+            kb = fmt.build_page_keyboard("search", lib_result.get("page", 0), lib_result.get("total", 0), PAGE_SIZE, query=search_query)
+        else:
+            return
+
+        await query.edit_message_text(text, parse_mode="Markdown", reply_markup=kb)
+    except Exception as e:
+        log.exception("Pagination callback error")
+        await query.edit_message_text(f"⚠️ 페이지 이동 오류: {e}")
+
+
 async def _post_init(app: Application) -> None:
     setup_scheduler(app)
 
@@ -174,6 +207,7 @@ def main() -> None:
     app.add_handler(CommandHandler("delete", _handle))
     app.add_handler(CommandHandler("recommend", _handle))
     app.add_handler(CommandHandler("verbose", _handle))
+    app.add_handler(CallbackQueryHandler(_page_callback, pattern=r"^(list|search):"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _handle))
     log.info("Bot started")
     app.run_polling()

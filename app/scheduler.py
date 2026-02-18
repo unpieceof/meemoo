@@ -1,12 +1,12 @@
 """Scheduled random memo recommendations (2x daily)."""
 from __future__ import annotations
 
-import random
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram.ext import Application
 
 from . import supabase_client, formatter as fmt
+from .workers import recommender_run
 
 log = logging.getLogger(__name__)
 
@@ -32,18 +32,20 @@ def setup_scheduler(app: Application) -> AsyncIOScheduler:
 
 
 async def _push_recommendations(app: Application) -> None:
-    """Pick random memos and send to all registered users."""
+    """Run recommender with 1 category and send to all registered users."""
     users = supabase_client.list_users()
-    memos = supabase_client.get_all_memos_meta()
-    if not users or not memos:
+    if not users:
         return
 
-    pick = random.sample(memos, min(3, len(memos)))
-    lines = ["💡 *오늘의 랜덤 메모 추천*\n"]
-    for m in pick:
-        tags = " ".join(f"#{t}" for t in m.get("tags", []))
-        lines.append(f"• *{m.get('title', '')}*  {tags}")
-    text = "\n".join(lines)
+    try:
+        result = recommender_run("", max_categories=1)
+    except Exception:
+        log.exception("Scheduled recommend failed")
+        return
+
+    text = fmt.fmt_recommend(result)
+    if not text or "아직 없" in text:
+        return
 
     bot = app.bot
     for u in users:

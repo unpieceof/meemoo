@@ -4,6 +4,10 @@ All 'character vibe' is produced here in Python, NOT by the LLM.
 """
 from __future__ import annotations
 
+import math
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
 
 def fmt_analyst(data: dict) -> str:
     """Format analyst result for Telegram."""
@@ -27,12 +31,18 @@ def fmt_list(data: dict) -> str:
     memos = data.get("memos", [])
     if not memos:
         return "📚 저장된 메모가 없습니다."
+    page = data.get("page", 0)
+    total = data.get("total", len(memos))
+    page_size = data.get("page_size", 5)
+    total_pages = max(1, math.ceil(total / page_size))
     lines = []
-    for i, m in enumerate(memos, 1):
+    offset = page * page_size
+    for i, m in enumerate(memos, offset + 1):
         tags = " ".join(f"#{t}" for t in m.get("tags", []))
         cat = m.get('category', '')
         lines.append(f"{i}. *[{cat}] {_esc(m.get('title',''))}*\n   `{m.get('id','')}`\n   {tags}\n")
-    return "📚 *메모 목록*\n\n" + "\n".join(lines)
+    header = f"📚 *메모 목록* ({page + 1}/{total_pages}페이지, 총 {total}개)\n\n"
+    return header + "\n".join(lines)
 
 
 def fmt_search(data: dict) -> str:
@@ -41,7 +51,13 @@ def fmt_search(data: dict) -> str:
     if not memos:
         return f"🔍 `{_esc(q)}` 검색 결과 없음"
 
-    lines = [f"🔍 *검색: {_esc(q)}*\n"]
+    page = data.get("page", 0)
+    total = data.get("total", len(memos))
+    page_size = data.get("page_size", 5)
+    total_pages = max(1, math.ceil(total / page_size))
+    page_info = f" ({page + 1}/{total_pages}페이지)" if total_pages > 1 else ""
+
+    lines = [f"🔍 *검색: {_esc(q)}*{page_info}\n"]
 
     for m in memos:
         # display_title 예: "📘 [배움 · Agent Skills] 실제제목"
@@ -211,6 +227,29 @@ def fmt_verbose_step(stage: str, data: dict) -> str:
     if len(preview) > 500:
         preview = preview[:500] + "..."
     return f"🔧 *[{stage}]*\n```json\n{preview}\n```"
+
+
+def build_page_keyboard(
+    action: str, page: int, total: int, page_size: int, query: str | None = None,
+) -> InlineKeyboardMarkup | None:
+    """Build inline keyboard with prev/next buttons. Returns None if only 1 page."""
+    total_pages = max(1, math.ceil(total / page_size))
+    if total_pages <= 1:
+        return None
+    buttons = []
+    if page > 0:
+        if action == "search" and query:
+            cb = f"search:{query}:{page - 1}"
+        else:
+            cb = f"list:{page - 1}"
+        buttons.append(InlineKeyboardButton("← 이전", callback_data=cb))
+    if page < total_pages - 1:
+        if action == "search" and query:
+            cb = f"search:{query}:{page + 1}"
+        else:
+            cb = f"list:{page + 1}"
+        buttons.append(InlineKeyboardButton("다음 →", callback_data=cb))
+    return InlineKeyboardMarkup([buttons]) if buttons else None
 
 
 def _esc(text: str) -> str:

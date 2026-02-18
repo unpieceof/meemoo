@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from . import claude_client, supabase_client, extractor, embeddings
 from .schemas import ANALYST_SCHEMA, RECOMMENDER_SCHEMA
 
+PAGE_SIZE = 5
+
 
 def _memo_text(result: dict) -> str:
     """Build searchable text for embedding from analyst result."""
@@ -162,29 +164,47 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
         return {"action": "saved", "memo": saved[0] if saved else memo}
 
     if action == "list":
-        memos = supabase_client.list_memos()
-        return {"action": "list", "memos": memos}
+        page = 0
+        if payload.strip().isdigit():
+            page = int(payload.strip())
+        offset = page * PAGE_SIZE
+        memos = supabase_client.list_memos(limit=PAGE_SIZE, offset=offset)
+        total = supabase_client.count_memos()
+        return {"action": "list", "memos": memos, "page": page, "total": total}
 
     if action == "search":
+        # Parse page from payload: "query:page" or just "query"
+        page = 0
+        query = payload
+        if ":" in payload:
+            parts = payload.rsplit(":", 1)
+            if parts[-1].strip().isdigit():
+                query = parts[0]
+                page = int(parts[-1].strip())
+
         # Vector search + text search, merge and dedupe
         try:
-            query_emb = embeddings.embed_one(payload)
+            query_emb = embeddings.embed_one(query)
             vec_memos = supabase_client.search_memos_vector(query_emb)
         except Exception:
             vec_memos = []
-    
-        text_memos = supabase_client.search_memos_text(payload)
-    
+
+        text_memos = supabase_client.search_memos_text(query)
+
         seen = set()
-        memos = []
+        all_memos = []
         for m in vec_memos + text_memos:
             mid = m.get("id")
             if not mid or mid in seen:
                 continue
             seen.add(mid)
-            memos.append(_decorate(m))
-    
-        return {"action": "search", "query": payload, "memos": memos[:3]}
+            all_memos.append(_decorate(m))
+
+        total = len(all_memos)
+        start = page * PAGE_SIZE
+        memos = all_memos[start:start + PAGE_SIZE]
+
+        return {"action": "search", "query": query, "memos": memos, "page": page, "total": total}
 
     if action == "category":
         if not payload:
@@ -206,7 +226,7 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
 
 
 # ── Recommender (💡) ────────────────────────────────────────
-def recommender_run(payload: str) -> dict:
+def recommender_run(payload: str, max_categories: int = 3) -> dict:
     """Recommend memos grouped by category. Only when explicitly requested."""
     metas = supabase_client.get_all_memos_meta()
     if not metas:
@@ -220,20 +240,20 @@ def recommender_run(payload: str) -> dict:
             "규칙:\n"
             "1) 먼저 memo.category를 기준으로 묶어. (예: 배움/정보)\n"
             "   - category가 너무 넓으면 tags를 참고해서 카테고리명을 더 직관적으로 바꿔도 됨.\n"
-            "2) 카테고리는 2~5개.\n"
-            "3) 각 카테고리에는 emoji 1개, one_liner(자극적인 한 줄 소개) 1개.\n"
-            "4) 각 카테고리 items는 1~3개.\n"
+            f"2) 카테고리는 최대 {max_categories}개.\n"
+            "3) 각 카테고리에는 emoji 1개, one_liner(커뮤니티 말투로 자극적인 한 줄 소개) 1개.\n"
+            "4) 각 카테고리 items는 1개.\n"
             "5) 각 item에는:\n"
             "   - memo_id: 입력의 id 그대로\n"
             "   - title: 입력의 title 그대로\n"
             "   - preview: summary_bullets 중에서 가장 '아 이거!' 싶은 1개를 골라 한 줄로\n"
-            "   - hook: 커뮤니티 말투로 다시 보고 싶게 한 줄 (허위/과장 금지)\n"
             "   - reason: 짧고 직관적으로 왜 지금 봐야 하는지\n"
             "   - tags: 입력 tags 중 핵심 2~4개만\n"
             "6) 말투: 친근 + 살짝 자극(커뮤니티 톤 가능). 근데 정보는 정확해야 함.\n"
         ),
         user=json.dumps(metas, ensure_ascii=False),
         schema=RECOMMENDER_SCHEMA,
+        max_tokens=4096,
     )
     return result
 
