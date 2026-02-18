@@ -182,27 +182,9 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
                 query = parts[0]
                 page = int(parts[-1].strip())
 
-        # Vector search + text search, merge and dedupe
-        try:
-            query_emb = embeddings.embed_one(query)
-            vec_memos = supabase_client.search_memos_vector(query_emb)
-        except Exception:
-            vec_memos = []
-
-        text_memos = supabase_client.search_memos_text(query)
-
-        seen = set()
-        all_memos = []
-        for m in vec_memos + text_memos:
-            mid = m.get("id")
-            if not mid or mid in seen:
-                continue
-            seen.add(mid)
-            all_memos.append(_decorate(m))
-
-        total = len(all_memos)
-        start = page * PAGE_SIZE
-        memos = all_memos[start:start + PAGE_SIZE]
+        offset = page * PAGE_SIZE
+        memos, total = supabase_client.search_memos_text(query, limit=PAGE_SIZE, offset=offset)
+        memos = [_decorate(m) for m in memos]
 
         return {"action": "search", "query": query, "memos": memos, "page": page, "total": total}
 

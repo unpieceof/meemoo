@@ -30,19 +30,19 @@ def count_memos() -> int:
     return res.count or 0
 
 
-def search_memos_text(query: str) -> list[dict]:
-    """Fallback: ilike search on title, category, and array-to-string tags."""
-    like = f"%{query}%"
-    # tags is text[], so use cs (contains) won't work for partial.
-    # Search title and category with ilike; for tags, cast via raw filter.
-    return (
-        _sb.table(TABLE)
-        .select("id,title,summary_bullets,category,tags,source_url,source_type,created_at")
-        .or_(f"title.ilike.{like},category.ilike.{like}")
-        .limit(20)
-        .execute()
-        .data
-    )
+def search_memos_text(query: str, limit: int = 5, offset: int = 0) -> tuple[list[dict], int]:
+    """Keyword search via RPC (title, category, raw_content, tags, bullets)."""
+    rows = _sb.rpc(
+        "search_memos",
+        {"query": query, "lim": limit, "off": offset},
+    ).execute().data
+    if not rows:
+        return [], 0
+    total = rows[0].get("total_count", len(rows))
+    # Strip total_count from each row
+    for r in rows:
+        r.pop("total_count", None)
+    return rows, total
 
 
 def search_memos_vector(query_embedding: list[float], threshold: float = 0.1, limit: int = 10) -> list[dict]:
