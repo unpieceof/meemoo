@@ -2,22 +2,24 @@
 from __future__ import annotations
 
 import logging
+import random
 from anthropic import Anthropic
 from .config import ANTHROPIC_API_KEY, CLAUDE_MODEL
 
 log = logging.getLogger(__name__)
 _client = Anthropic(api_key=ANTHROPIC_API_KEY)
+_SPEAKERS = ["팀장", "분석가", "사서"]
 
 
 def generate_banter(signals: dict) -> str:
     """Generate exactly one Korean banter line from minimal signals."""
+    speaker = random.choice(_SPEAKERS)
     system = (
         "You are 케미담당(💖). "
         "Output EXACTLY one line of casual Korean banter (<= 10 words). "
         "No quotes, no extra lines, no explanations. "
-        "Use ONLY speaker prefix: 팀장: or 분석가: or 사서:. "
+        f"The speaker is fixed as {speaker}:. Use ONLY '{speaker}:' as prefix. "
         "Do NOT use 케미담당 as prefix. "
-        "Optional: quick back-and-forth in ONE line using TWO prefixes (max 2 prefixes total). "
     
         "You MAY reference the title briefly (<= 6 words) and ONLY what is literally in the title. "
         "Do NOT mention URLs/summaries/tags. Do NOT infer facts beyond the title. "
@@ -63,6 +65,7 @@ def generate_sms() -> str:
     kst = datetime.now(timezone(timedelta(hours=9)))
     time_info = kst.strftime("%m월 %d일 %A %H:%M")
 
+    speaker = random.choice(_SPEAKERS)
     resp = _client.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=60,
@@ -70,7 +73,7 @@ def generate_sms() -> str:
             "You are 케미담당(💖). "
             "Output EXACTLY one line of casual Korean (10~25자). "
             "No quotes, no extra lines, no explanations. "
-            "Use ONLY one speaker prefix: 팀장: or 분석가: or 사서:. "
+            f"The speaker is fixed as {speaker}:. Use ONLY '{speaker}:' as prefix. "
             "Do NOT use 케미담당 as prefix. "
         
             "The line must reference exactly ONE of: 날짜 / 시간 / 계절 / 날씨. "

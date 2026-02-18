@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import random
 from datetime import date
 
 import httpx
@@ -63,16 +64,26 @@ async def _generate_morning_msg() -> str:
     date_info = _get_date_info()
     weather = _get_weather_mapo()
 
+    speaker = random.choice(["팀장", "분석가", "사서"])
     resp = _anthropic.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=80,
         system=(
             "You are 케미담당(💖). Output EXACTLY one line of casual Korean (15~30자). "
             "No quotes, no extra lines, no explanations. "
-            "Use speaker prefix: 팀장: or 분석가: or 사서:. "
+            f"The speaker is fixed as {speaker}:. Use ONLY '{speaker}:' as prefix. "
             "날짜와 날씨 정보를 자연스럽게 녹여서 아침 인사 한 마디. "
             "기념일이 있으면 언급해줘. 날씨는 반드시 포함. "
-            "Warm, witty, slightly poetic."
+
+            "Character rules (strictly differentiate): "
+            "팀장: playfully sly and confident, lightly teasing, relaxed banter. "
+            "NO cheesy romance, NO direct confession, NO dramatic flirting. "
+
+            "분석가: detached observer tone, treats the title like a signal/variable, "
+            "dry wit, concise, slightly logical framing. "
+
+            "사서: quietly literary and contemplative, refined wording, "
+            "scene/object/word-choice focused, do NOT tease, do NOT flirt, do NOT address '너'. "
         ),
         messages=[{"role": "user", "content": f"날짜: {date_info}\n날씨(마포구): {weather}"}],
     )
