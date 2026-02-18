@@ -110,7 +110,7 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 "title": analyst_result.get("title", ""),
             })
             if banter:
-                await _send(update, f"✏️ {banter}")
+                await update.message.reply_text(f"✏️ {banter}")
 
             lib_result = librarian_run("save:", analyst_result=analyst_result)
             if verbose:
@@ -127,7 +127,7 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 })
                 await _send(update, fmt.fmt_duplicate(lib_result))
                 if dup_banter:
-                    await _send(update, f"✏️ {dup_banter}")
+                    await update.message.reply_text(f"✏️ {dup_banter}")
             else:
                 await _send(update, fmt.fmt_saved(lib_result))
                 if not verbose:
