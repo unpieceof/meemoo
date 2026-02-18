@@ -195,9 +195,9 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
 
 
 # ── Recommender (💡) ────────────────────────────────────────
-def recommender_run(payload: str, max_categories: int = 3) -> dict:
+def recommender_run(payload: str, max_categories: int = 3, memos: list | None = None) -> dict:
     """Recommend memos grouped by category. Only when explicitly requested."""
-    metas = supabase_client.get_random_memos_by_category(per_category=1, max_categories=max_categories)
+    metas = memos if memos is not None else supabase_client.get_random_memos_by_category(per_category=1, max_categories=max_categories)
     if not metas:
         return {"categories": []}
 

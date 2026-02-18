@@ -188,20 +188,6 @@ def fmt_recommend(data: dict) -> str:
 
 
 
-def fmt_daily_recommend(memo: dict) -> str:
-    """아침 스케줄용 단일 메모 추천 포맷."""
-    title = _esc(memo.get("title", ""))
-    bullets = memo.get("summary_bullets") or []
-    category = _esc(memo.get("category", ""))
-    tags = " ".join(f"#{t}" for t in (memo.get("tags") or [])[:4])
-    bullet_lines = "\n".join(f"  • {_esc(b)}" for b in bullets[:3])
-    return (
-        f"💡 *오늘의 메모*\n\n"
-        f"📌 *{title}*\n"
-        f"{bullet_lines}\n\n"
-        f"📂 `{category}`  {tags}"
-    ).strip()
-
 
 def fmt_duplicate(data: dict) -> str:
     return (
