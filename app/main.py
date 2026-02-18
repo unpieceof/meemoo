@@ -59,7 +59,7 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             from .banter import generate_sms
             try:
                 msg = generate_sms()
-                await update.message.reply_text(f"💖 {msg}")
+                await update.message.reply_text(f"🧃 {msg}")
             except Exception as e:
                 log.exception("SMS banter failed")
                 await _send(update, fmt.fmt_error(f"오류 발생: {e}"))
@@ -110,7 +110,7 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 "title": analyst_result.get("title", ""),
             })
             if banter:
-                await _send(update, f"💖 {banter}")
+                await _send(update, f"✏️ {banter}")
 
             lib_result = librarian_run("save:", analyst_result=analyst_result)
             if verbose:
@@ -127,7 +127,7 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 })
                 await _send(update, fmt.fmt_duplicate(lib_result))
                 if dup_banter:
-                    await _send(update, f"💖 {dup_banter}")
+                    await _send(update, f"✏️ {dup_banter}")
             else:
                 await _send(update, fmt.fmt_saved(lib_result))
                 if not verbose:
