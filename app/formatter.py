@@ -157,8 +157,8 @@ def fmt_recommend(data: dict) -> str:
     lines = ["💡 *오늘 다시 보면 이득 보는 메모들* 🔥\n"]
     for c in cats:
         emoji = c.get("emoji", "💡")
-        category = c.get("category", "추천")
-        one_liner = c.get("one_liner", "")
+        category = _esc(c.get("category", "추천"))
+        one_liner = _esc(c.get("one_liner", ""))
 
         lines.append(f"{emoji} *{category}*")
         if one_liner:
@@ -166,17 +166,17 @@ def fmt_recommend(data: dict) -> str:
 
         for it in c.get("items", []):
             memo_id = it["memo_id"][:8]
-            title = it.get("title", "").strip()
-            preview = it.get("preview", "").strip()
-            hook = it.get("hook", "").strip()
-            reason = it.get("reason", "").strip()
+            title = _esc(it.get("title", "").strip())
+            preview = _esc(it.get("preview", "").strip())
+            hook = _esc(it.get("hook", "").strip())
+            reason = _esc(it.get("reason", "").strip())
             tags = it.get("tags", []) or []
 
-            lines.append(f"  • `{memo_id}` **{title}**")
+            lines.append(f"  • `{memo_id}` *{title}*")
             if hook:
                 lines.append(f"    - {hook}")
             if preview:
-                lines.append(f"    - _미리보기_: {preview}")
+                lines.append(f"    - 미리보기: {preview}")
             if tags:
                 lines.append(f"    - 태그: " + ", ".join([f"`{t}`" for t in tags[:4]]))
             if reason:
@@ -197,7 +197,7 @@ def fmt_duplicate(data: dict) -> str:
 
 
 def fmt_error(msg: str) -> str:
-    return f"⚠️ {msg}"
+    return f"⚠️ {_esc(msg)}"
 
 
 def fmt_help() -> str:

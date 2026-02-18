@@ -197,32 +197,32 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
 # ── Recommender (💡) ────────────────────────────────────────
 def recommender_run(payload: str, max_categories: int = 3) -> dict:
     """Recommend memos grouped by category. Only when explicitly requested."""
-    metas = supabase_client.get_all_memos_meta()
+    metas = supabase_client.get_random_memos_by_category(per_category=2, max_categories=max_categories)
     if not metas:
         return {"categories": []}
 
     result = claude_client.ask_json(
         system=(
             "너는 '메모 추천 큐레이터'야.\n"
-            "입력은 메모 목록(JSON 배열)이고, 각 메모는 id/title/summary_bullets/category/tags 등을 가진다.\n\n"
-            "목표: 사용자가 지금 다시 보면 좋을 메모를 '카테고리별'로 추천 결과(JSON)로 반환.\n\n"
+            "입력은 메모 목록(JSON 배열)이고, 각 메모는 id/title/summary_bullets/category/tags를 가진다.\n\n"
+            "목표: 각 메모에 대해 카테고리별 추천 결과(JSON)를 반환.\n\n"
             "규칙:\n"
-            "1) 먼저 memo.category를 기준으로 묶어. (예: 배움/정보)\n"
-            "   - category가 너무 넓으면 tags를 참고해서 카테고리명을 더 직관적으로 바꿔도 됨.\n"
+            "1) memo.category를 기준으로 묶어.\n"
+            "   - category가 너무 넓으면 tags를 참고해 더 직관적인 이름으로 바꿔도 됨.\n"
             f"2) 카테고리는 최대 {max_categories}개.\n"
             "3) 각 카테고리에는 emoji 1개, one_liner(커뮤니티 말투로 자극적인 한 줄 소개) 1개.\n"
-            "4) 각 카테고리 items는 1개.\n"
+            "4) 각 카테고리 items는 입력된 메모 전부 포함.\n"
             "5) 각 item에는:\n"
             "   - memo_id: 입력의 id 그대로\n"
             "   - title: 입력의 title 그대로\n"
-            "   - preview: summary_bullets 중에서 가장 '아 이거!' 싶은 1개를 골라 한 줄로\n"
+            "   - preview: summary_bullets 중 가장 '아 이거!' 싶은 1개\n"
             "   - reason: 짧고 직관적으로 왜 지금 봐야 하는지\n"
             "   - tags: 입력 tags 중 핵심 2~4개만\n"
-            "6) 말투: 친근 + 살짝 자극(커뮤니티 톤 가능). 근데 정보는 정확해야 함.\n"
+            "6) 말투: 친근 + 살짝 자극(커뮤니티 톤). 정보는 정확하게.\n"
         ),
         user=json.dumps(metas, ensure_ascii=False),
         schema=RECOMMENDER_SCHEMA,
-        max_tokens=4096,
+        max_tokens=1024,
     )
     return result
 

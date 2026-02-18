@@ -104,16 +104,31 @@ def get_category_counts() -> list[dict]:
     return [{"category": k, "count": v} for k, v in sorted(counts.items(), key=lambda x: -x[1])]
 
 
-def get_all_memos_meta() -> list[dict]:
-    """Lightweight fetch for recommender."""
-    return (
+def get_random_memos_by_category(per_category: int = 2, max_categories: int = 3) -> list[dict]:
+    """카테고리별 랜덤 per_category개씩, max_categories개 카테고리만 반환."""
+    import random
+    from collections import defaultdict
+
+    rows = (
         _sb.table(TABLE)
         .select("id,title,summary_bullets,category,tags")
         .order("created_at", desc=True)
-        .limit(50)
+        .limit(200)
         .execute()
         .data
     )
+    by_cat: dict[str, list] = defaultdict(list)
+    for m in rows:
+        by_cat[m.get("category") or "기타"].append(m)
+
+    cats = list(by_cat.keys())
+    random.shuffle(cats)
+
+    selected = []
+    for cat in cats[:max_categories]:
+        pool = by_cat[cat]
+        selected.extend(random.sample(pool, min(per_category, len(pool))))
+    return selected
 
 
 # ── Users ────────────────────────────────────────────────────
