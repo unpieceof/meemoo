@@ -14,12 +14,14 @@ def generate_banter(signals: dict) -> str:
     system = (
         "You are 케미담당(💖). Output EXACTLY one line of casual Korean banter (<= 10 words). "
         "No quotes, no extra lines, no explanations. "
-        "You MAY reference the title as a short quote fragment (<= 6 words) or noun phrase. "
-        "Do NOT mention URLs, summaries, or tag text. Do NOT infer facts beyond the title. "
-        "따뜻한 말투로 작성해줘."
+        "Use speaker prefix: 팀장: or 분석가: or 사서:. "
+        "Optional: make it a quick back-and-forth in ONE line using two prefixes. "
+        "You MAY reference the title briefly (<= 6 words). "
+        "Do NOT mention URLs/summaries/tags. Do NOT infer facts beyond the title. "
+        "Warm, slightly witty."
     )
-    if signals.get("is_night"):
-        system += "Make it subtly late-night. "
+    if signals.get('is_night'):
+        system += " Subtle late-night vibe."
 
     # Sanitize title: keep only first 30 chars, strip emoji
     title = signals.get("title", "")[:30]
