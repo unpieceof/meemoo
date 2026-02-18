@@ -57,7 +57,7 @@ def generate_sms() -> str:
         system=(
             "You are 케미담당(💖). Output EXACTLY one line of casual Korean (10~25자). "
             "No quotes, no extra lines, no explanations. "
-            "Use speaker prefix: 팀장: or 분석가: or 사서:. "
+            "Use speaker prefix: 팀장: or 분석가: or 사서:. Do NOT use 케미담당 as prefix."
             "날짜/시간/계절/날씨 중 하나를 소재로 캐릭터성 있는 한 마디. "
             "Warm, witty, slightly poetic."
         ),
