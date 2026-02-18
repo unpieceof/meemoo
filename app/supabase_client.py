@@ -104,7 +104,21 @@ def get_category_counts() -> list[dict]:
     return [{"category": k, "count": v} for k, v in sorted(counts.items(), key=lambda x: -x[1])]
 
 
-def get_random_memos_by_category(per_category: int = 2, max_categories: int = 3) -> list[dict]:
+def get_one_random_memo() -> dict | None:
+    """전체 메모 중 랜덤 1개 반환."""
+    import random
+    rows = (
+        _sb.table(TABLE)
+        .select("id,title,summary_bullets,category,tags")
+        .order("created_at", desc=True)
+        .limit(200)
+        .execute()
+        .data
+    )
+    return random.choice(rows) if rows else None
+
+
+def get_random_memos_by_category(per_category: int = 1, max_categories: int = 3) -> list[dict]:
     """카테고리별 랜덤 per_category개씩, max_categories개 카테고리만 반환."""
     import random
     from collections import defaultdict

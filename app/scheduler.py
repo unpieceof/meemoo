@@ -10,7 +10,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram.ext import Application
 
 from . import supabase_client, formatter as fmt
-from .workers import recommender_run
 from anthropic import Anthropic
 from .config import ANTHROPIC_API_KEY, CLAUDE_MODEL
 
@@ -142,20 +141,16 @@ async def _push_morning(app: Application) -> None:
 
 
 async def _push_recommendations(app: Application) -> None:
-    """Run recommender with 1 category and send to all registered users."""
+    """전체 메모 중 랜덤 1개를 모든 유저에게 전송."""
     users = supabase_client.list_users()
     if not users:
         return
 
-    try:
-        result = recommender_run("", max_categories=1)
-    except Exception:
-        log.exception("Scheduled recommend failed")
+    memo = supabase_client.get_one_random_memo()
+    if not memo:
         return
 
-    text = fmt.fmt_recommend(result)
-    if not text or "아직 없" in text:
-        return
+    text = fmt.fmt_daily_recommend(memo)
 
     bot = app.bot
     for u in users:
