@@ -24,7 +24,8 @@ def fmt_analyst(data: dict) -> str:
 
 def fmt_saved(data: dict) -> str:
     memo = data.get("memo", {})
-    return f"📚 *저장 완료!*\n`{memo.get('title', '(제목 없음)')}`"
+    mid8 = (memo.get("id") or "")[:8]
+    return f"📚 *저장 완료!* `{mid8}`\n`{memo.get('title', '(제목 없음)')}`"
 
 
 def fmt_list(data: dict) -> str:
