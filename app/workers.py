@@ -7,7 +7,7 @@ import re
 from datetime import datetime, timezone
 
 from . import claude_client, supabase_client, extractor
-from .schemas import ANALYST_SCHEMA, RECOMMENDER_SCHEMA
+from .schemas import ANALYST_SCHEMA, ANALYST_IMAGE_SCHEMA, RECOMMENDER_SCHEMA
 
 PAGE_SIZE = 5
 
@@ -142,22 +142,30 @@ def analyst_run_with_image(image_bytes: bytes, caption: str = "") -> dict:
 
     result = claude_client.ask_json_with_image(
         system=(
-            "You are a concise analyst. Given an image (screenshot, note, document, photo with text, etc.) "
-            "and optional user notes, produce a memo with: title (Korean), 3 bullet summary (Korean), category, tags."
-            "[출력 규칙]"
-            "title: 10~25자, 핵심 포함"
-            "summary_bullets: 정확히 3개, 각 15~35자, 커뮤니티 말투(예: '~하면 됨', '~인 듯', '요약하면'), 쉬운 말 + 군더더기 제거"
-            "category: [일, 배움, 아이디어, 정보, 기록, 문화, 소비] 중 1개"
-            "tags: 2~5개 명사형(2~10자), 검색이 쉽도록 키워드를 추출하고, 식당/카페 관련 메모는 무조건 맛집 태그를 추가. 장소가 있으면 장소(2~5자) 키워드를 반드시 추가."
+            "You are a precise analyst. Given an image (screenshot, note, document, photo with text, etc.) "
+            "and optional user notes, do TWO things:\n"
+            "1) raw_text: Extract ALL visible text from the image verbatim. "
+            "Preserve the original structure faithfully — headings, bullet points, numbered lists, table rows, "
+            "paragraphs, labels, captions, metadata. Do NOT summarize, paraphrase, or omit any text. "
+            "If the image has no readable text, describe the visual content in Korean.\n"
+            "2) Produce a memo: title (Korean), 3 bullet summary (Korean), category, tags.\n"
+            "[메모 출력 규칙]\n"
+            "title: 10~25자, 핵심 포함\n"
+            "summary_bullets: 정확히 3개, 각 15~35자, 커뮤니티 말투(예: '~하면 됨', '~인 듯', '요약하면'), 쉬운 말 + 군더더기 제거\n"
+            "category: [일, 배움, 아이디어, 정보, 기록, 문화, 소비] 중 1개\n"
+            "tags: 2~5개 명사형(2~10자), 식당/카페는 맛집 태그 필수, 장소가 있으면 장소 키워드 추가."
         ),
         image_b64=image_b64,
         media_type="image/jpeg",
         user_text=user_text,
-        schema=ANALYST_SCHEMA,
+        schema=ANALYST_IMAGE_SCHEMA,
     )
+    raw_text = result.pop("raw_text", "") or ""
+    if caption:
+        raw_text = f"[사용자 메모] {caption}\n\n{raw_text}".strip()
     result["source_url"] = f"memo://image/{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
     result["source_type"] = "image"
-    result["_raw_content"] = user_text
+    result["_raw_content"] = raw_text
     return result
 
 
