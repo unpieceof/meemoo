@@ -1,7 +1,6 @@
 """Thin Claude API wrapper with strict JSON schema via tool use."""
 from __future__ import annotations
 
-import json
 import logging
 from anthropic import Anthropic
 from .config import ANTHROPIC_API_KEY, CLAUDE_MODEL
