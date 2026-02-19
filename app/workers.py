@@ -12,6 +12,22 @@ from .schemas import ANALYST_SCHEMA, RECOMMENDER_SCHEMA
 PAGE_SIZE = 5
 
 
+def _ensure_list(val) -> list:
+    """Ensure val is a Python list. Parses JSON string if needed."""
+    if isinstance(val, list):
+        return val
+    if isinstance(val, str):
+        stripped = val.strip()
+        try:
+            parsed = json.loads(stripped)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            pass
+        return [s.strip() for s in stripped.split(",") if s.strip()]
+    return []
+
+
 # Librarian Search용 function ────────────────────────────────────────────
 CATEGORY_ICON = {
     "일": "🧑‍💻",
@@ -171,9 +187,9 @@ def librarian_run(action_payload: str, analyst_result: dict | None = None) -> di
 
         memo = {
             "title": analyst_result["title"],
-            "summary_bullets": analyst_result["bullets"],
+            "summary_bullets": _ensure_list(analyst_result["bullets"]),
             "category": analyst_result["category"],
-            "tags": analyst_result["tags"],
+            "tags": _ensure_list(analyst_result["tags"]),
             "source_url": src_url,
             "source_type": analyst_result["source_type"],
             "raw_content": analyst_result.get("_raw_content", "")[:8000],
