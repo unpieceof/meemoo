@@ -15,7 +15,7 @@ from telegram.ext import (
 
 from .config import TELEGRAM_TOKEN, VERBOSE_DEFAULT
 from .router import route
-from .workers import analyst_run, librarian_run, recommender_run, PAGE_SIZE
+from .workers import analyst_run, analyst_run_with_image, librarian_run, recommender_run, PAGE_SIZE
 from . import formatter as fmt
 from . import supabase_client
 from .scheduler import setup_scheduler
@@ -167,6 +167,52 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await _send(update, fmt.fmt_error(f"오류 발생: {e}"))
 
 
+async def _handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle photo messages: download -> vision analysis -> save memo."""
+    chat_id = update.effective_chat.id
+    verbose = _verbose.get(chat_id, VERBOSE_DEFAULT)
+    user = update.effective_user
+    supabase_client.upsert_user(chat_id, user.username if user else None)
+
+    caption = update.message.caption or ""
+    log.info("chat=%s action=photo_analyst caption=%s", chat_id, caption[:80])
+    await _send(update, "🔍 분석가: 핵심 정리 중...")
+
+    try:
+        is_night = datetime.now(timezone.utc).hour >= 14
+        photo = update.message.photo[-1]  # largest size (always JPEG)
+        file = await ctx.bot.get_file(photo.file_id)
+        file_bytes = bytes(await file.download_as_bytearray())
+
+        analyst_result = analyst_run_with_image(file_bytes, caption)
+        if verbose:
+            await _send(update, fmt.fmt_verbose_step("🔍 Analyst", analyst_result))
+            await _send(update, fmt.fmt_analyst(analyst_result))
+
+        banter = maybe_banter({
+            "stage": "after_analysis", "intent": "save",
+            "source_type": analyst_result.get("source_type", ""),
+            "is_night": is_night, "duplicate": False,
+            "category": analyst_result.get("category", ""),
+            "tag_count": len(analyst_result.get("tags", [])),
+            "title": analyst_result.get("title", ""),
+        })
+        if banter:
+            await update.message.reply_text(f"✏️ {banter}")
+
+        lib_result = librarian_run("save:", analyst_result=analyst_result)
+        if verbose:
+            await _send(update, fmt.fmt_verbose_step("📚 Librarian", lib_result))
+
+        await _send(update, fmt.fmt_saved(lib_result))
+        if not verbose:
+            await _send(update, fmt.fmt_analyst(analyst_result))
+
+    except Exception as e:
+        log.exception("Error in photo pipeline")
+        await _send(update, fmt.fmt_error(f"이미지 처리 오류: {e}"))
+
+
 async def _page_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle inline keyboard pagination button presses."""
     query = update.callback_query
@@ -214,6 +260,7 @@ def main() -> None:
     app.add_handler(CommandHandler("verbose", _handle))
     app.add_handler(CommandHandler("sms", _handle))
     app.add_handler(CallbackQueryHandler(_page_callback, pattern=r"^(list|search):"))
+    app.add_handler(MessageHandler(filters.PHOTO, _handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _handle))
     log.info("Bot started")
     app.run_polling()
