@@ -28,6 +28,27 @@ ANALYST_SCHEMA = {
     "additionalProperties": False,
 }
 
+ANALYST_IMAGE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "raw_text": {
+            "type": "string",
+            "description": "All text extracted from the image verbatim, preserving structure (headings, lists, tables, paragraphs). No summarization.",
+        },
+        "title": {"type": "string"},
+        "bullets": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 3,
+            "maxItems": 3,
+        },
+        "category": {"type": "string"},
+        "tags": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["raw_text", "title", "bullets", "category", "tags"],
+    "additionalProperties": False,
+}
+
 RECOMMENDER_SCHEMA = {
     "type": "object",
     "properties": {
