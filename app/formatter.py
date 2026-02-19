@@ -8,6 +8,8 @@ import math
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
+_MEMO_WEB_BASE = "https://meemoo-ui.vercel.app/memo"
+
 
 def fmt_analyst(data: dict) -> str:
     """Format analyst result for Telegram."""
@@ -24,8 +26,9 @@ def fmt_analyst(data: dict) -> str:
 
 def fmt_saved(data: dict) -> str:
     memo = data.get("memo", {})
-    mid8 = (memo.get("id") or "")[:8]
-    return f"📚 *저장 완료!* `{mid8}`\n`{memo.get('title', '(제목 없음)')}`"
+    mid = memo.get("id") or ""
+    url_part = f"[🔗 바로가기]({_MEMO_WEB_BASE}/{mid})" if mid else ""
+    return f"📚 *저장 완료!* {url_part}\n`{memo.get('title', '(제목 없음)')}`"
 
 
 def fmt_list(data: dict) -> str:
@@ -41,7 +44,9 @@ def fmt_list(data: dict) -> str:
     for i, m in enumerate(memos, offset + 1):
         tags = " ".join(f"#{t}" for t in m.get("tags", []))
         cat = m.get('category', '')
-        lines.append(f"{i}. *[{cat}] {_esc(m.get('title',''))}*\n   `{m.get('id','')}`\n   {tags}\n")
+        mid = m.get('id', '')
+        url_part = f"\n   [🔗 바로가기]({_MEMO_WEB_BASE}/{mid})" if mid else ""
+        lines.append(f"{i}. *[{cat}] {_esc(m.get('title',''))}*{url_part}\n   {tags}\n")
     header = f"📚 *메모 목록* ({page + 1}/{total_pages}페이지, 총 {total}개)\n\n"
     return header + "\n".join(lines)
 
@@ -64,7 +69,7 @@ def fmt_search(data: dict) -> str:
         # display_title 예: "📘 [배움 · Agent Skills] 실제제목"
         display_title = (m.get("display_title") or "").strip()
         raw_title = (m.get("title") or "").strip()
-        mid8 = (m.get("id") or "")[:8]
+        memo_id = m.get("id") or ""
 
         # ---- 제목 처리 ----
         if display_title:
@@ -75,12 +80,8 @@ def fmt_search(data: dict) -> str:
         else:
             safe_title = _esc(raw_title)
 
-        # ---- suffix (날짜 + id코드) ----
-        suffix_parts = []
-        if mid8:
-            suffix_parts.append(f"`{mid8}`")  # ← 코드블럭 처리
-
-        suffix = "  " + "  ".join(suffix_parts) if suffix_parts else ""
+        # ---- suffix (url 링크) ----
+        suffix = f"  [🔗]({_MEMO_WEB_BASE}/{memo_id})" if memo_id else ""
 
         lines.append(f"  • {safe_title}{suffix}")
 
@@ -119,35 +120,11 @@ def fmt_category(data: dict) -> str:
         return f"📂 `{cat}` 카테고리에 메모가 없습니다."
     lines = [f"📂 *카테고리: {_esc(cat)}* ({len(memos)}개)\n"]
     for i, m in enumerate(memos, 1):
-        lines.append(f"{i}. *{_esc(m.get('title',''))}*\n   `{m.get('id','')}`")
+        mid = m.get('id', '')
+        url_part = f"\n   [🔗 바로가기]({_MEMO_WEB_BASE}/{mid})" if mid else ""
+        lines.append(f"{i}. *{_esc(m.get('title',''))}*{url_part}")
     return "\n".join(lines)
 
-
-def fmt_view(data: dict) -> str:
-    memo = data.get("memo")
-    if not memo:
-        return "📄 해당 메모를 찾을 수 없습니다."
-    bullets = "\n".join(f"  • {b}" for b in memo.get("summary_bullets", []))
-    tags = " ".join(f"#{t}" for t in memo.get("tags", []))
-    url = memo.get("source_url", "")
-    url_line = f"🔗 {url}\n" if url and not url.startswith("memo://") else ""
-    raw = memo.get("raw_content", "")
-    raw_section = ""
-    if raw:
-        preview = raw[:500]
-        if len(raw) > 500:
-            preview += "..."
-        raw_section = f"\n📝 *본문*\n{_esc(preview)}\n"
-    return (
-        f"📄 *{_esc(memo.get('title', ''))}*\n\n"
-        f"{bullets}\n\n"
-        f"📂 카테고리: `{memo.get('category', '')}`\n"
-        f"🏷 {tags}\n"
-        f"🕐 {memo.get('created_at', '')[:19]}\n"
-        f"🆔 `{memo.get('id', '')}`\n"
-        f"{url_line}"
-        f"{raw_section}"
-    ).strip()
 
 
 def fmt_recommend(data: dict) -> str:
@@ -166,14 +143,15 @@ def fmt_recommend(data: dict) -> str:
             lines.append(f"> {one_liner}")
 
         for it in c.get("items", []):
-            memo_id = it["memo_id"][:8]
+            memo_id = it["memo_id"]
+            memo_url = f"{_MEMO_WEB_BASE}/{memo_id}"
             title = _esc(it.get("title", "").strip())
             preview = _esc(it.get("preview", "").strip())
             hook = _esc(it.get("hook", "").strip())
             reason = _esc(it.get("reason", "").strip())
             tags = it.get("tags", []) or []
 
-            lines.append(f"  • `{memo_id}` *{title}*")
+            lines.append(f"  • [🔗 바로가기]({memo_url}) *{title}*")
             if hook:
                 lines.append(f"    - {hook}")
             if preview:
@@ -216,8 +194,8 @@ def fmt_help() -> str:
 • /recommend → 랜덤 메모 추천
 
 📂 관리
-• /view id → 자세히 보기
 • /delete id → 삭제
+• [관리 Web](https://meemoo-ui.vercel.app)
 
 💬 기타
 • /sms → 한 마디 잡담

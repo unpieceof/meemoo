@@ -79,7 +79,6 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 "list": "📚 사서: 목록 정리해서 꺼내는 중...",
                 "search": "📚 사서: 색인 뒤지는 중...",
                 "category": "📚 사서: 분류표 확인 중...",
-                "view": "📚 사서: 해당 메모 찾는 중...",
                 "delete": "📚 사서: 기록 정리 중...",
             },
             "recommender": "💡 큐레이터: 연결 고리 탐색 중...",
@@ -150,8 +149,6 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 await _send(update, fmt.fmt_category_list(lib_result))
             elif act == "category":
                 await _send(update, fmt.fmt_category(lib_result))
-            elif act == "view":
-                await _send(update, fmt.fmt_view(lib_result))
             elif act == "delete":
                 await _send(update, fmt.fmt_delete(lib_result))
             else:
@@ -212,7 +209,6 @@ def main() -> None:
     app.add_handler(CommandHandler("list", _handle))
     app.add_handler(CommandHandler("search", _handle))
     app.add_handler(CommandHandler("category", _handle))
-    app.add_handler(CommandHandler("view", _handle))
     app.add_handler(CommandHandler("delete", _handle))
     app.add_handler(CommandHandler("recommend", _handle))
     app.add_handler(CommandHandler("verbose", _handle))
