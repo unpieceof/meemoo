@@ -56,7 +56,7 @@ def _decorate(m: dict) -> dict:
     if tag:
         left.append(tag)
 
-    prefix = f"{icon} [{' · '.join(left)}]"
+    prefix = f"{icon} \\[{' · '.join(left)}\\]"
     m["display_title"] = f"{prefix} {title}".strip()
 
     # 핵심: 검색용 1줄 프리뷰
