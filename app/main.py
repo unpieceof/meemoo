@@ -135,7 +135,6 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         if action == "librarian":
-            sub, _, _ = payload.partition(":")
             lib_result = librarian_run(payload)
             if verbose:
                 await _send(update, fmt.fmt_verbose_step("📚 Librarian", lib_result))

@@ -5,6 +5,7 @@ import logging
 import random
 from anthropic import Anthropic
 from .config import ANTHROPIC_API_KEY, CLAUDE_MODEL
+from .schemas import CHARACTER_RULES
 
 log = logging.getLogger(__name__)
 _client = Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -20,20 +21,9 @@ def generate_banter(signals: dict) -> str:
         "No quotes, no extra lines, no explanations. "
         f"The speaker is fixed as {speaker}:. Use ONLY '{speaker}:' as prefix. "
         "Do NOT use 케미담당 as prefix. "
-    
         "You MAY reference the title briefly (<= 6 words) and ONLY what is literally in the title. "
         "Do NOT mention URLs/summaries/tags. Do NOT infer facts beyond the title. "
-    
-        "Character rules (strictly differentiate): "
-        "팀장: playfully sly and confident, lightly teasing, relaxed banter. "
-        "NO cheesy romance, NO direct confession, NO dramatic flirting. "
-    
-        "분석가: detached observer tone, treats the title like a signal/variable, "
-        "dry wit, concise, slightly logical framing. "
-    
-        "사서: quietly literary and contemplative, refined wording, "
-        "scene/object/word-choice focused, do NOT tease, do NOT flirt, do NOT address '너'. "
-    )
+    ) + CHARACTER_RULES
     if signals.get('is_night'):
         system += " Subtle late-night vibe."
 

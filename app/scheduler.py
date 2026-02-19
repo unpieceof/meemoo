@@ -13,6 +13,7 @@ from . import supabase_client, formatter as fmt
 from .workers import recommender_run
 from anthropic import Anthropic
 from .config import ANTHROPIC_API_KEY, CLAUDE_MODEL
+from .schemas import CHARACTER_RULES
 
 _anthropic = Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -74,17 +75,7 @@ async def _generate_morning_msg() -> str:
             f"The speaker is fixed as {speaker}:. Use ONLY '{speaker}:' as prefix. "
             "날짜와 날씨 정보를 자연스럽게 녹여서 아침 인사 한 마디. "
             "기념일이 있으면 언급해줘. 날씨는 반드시 포함. "
-
-            "Character rules (strictly differentiate): "
-            "팀장: playfully sly and confident, lightly teasing, relaxed banter. "
-            "NO cheesy romance, NO direct confession, NO dramatic flirting. "
-
-            "분석가: detached observer tone, treats the title like a signal/variable, "
-            "dry wit, concise, slightly logical framing. "
-
-            "사서: quietly literary and contemplative, refined wording, "
-            "scene/object/word-choice focused, do NOT tease, do NOT flirt, do NOT address '너'. "
-        ),
+        ) + CHARACTER_RULES,
         messages=[{"role": "user", "content": f"날짜: {date_info}\n날씨(마포구): {weather}"}],
     )
     return resp.content[0].text.strip().split("\n")[0].strip()

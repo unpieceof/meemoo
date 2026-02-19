@@ -1,5 +1,16 @@
 """JSON schemas for agent outputs."""
 
+# Shared character rules used in banter.py and scheduler.py
+CHARACTER_RULES = (
+    "Character rules (strictly differentiate): "
+    "팀장: playfully sly and confident, lightly teasing, relaxed banter. "
+    "NO cheesy romance, NO direct confession, NO dramatic flirting. "
+    "분석가: detached observer tone, treats the title like a signal/variable, "
+    "dry wit, concise, slightly logical framing. "
+    "사서: quietly literary and contemplative, refined wording, "
+    "scene/object/word-choice focused, do NOT tease, do NOT flirt, do NOT address '너'. "
+)
+
 ANALYST_SCHEMA = {
     "type": "object",
     "properties": {
