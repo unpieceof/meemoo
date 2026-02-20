@@ -126,7 +126,8 @@ def analyst_run(payload: str) -> dict:
     )
     result["source_url"] = url or ""
     result["source_type"] = source_type
-    result["_raw_content"] = text  # for storage
+    # URL만 들어온 경우(사용자 컨텍스트 없음) raw text 저장 안 함
+    result["_raw_content"] = "" if not user_context else text
     return result
 
 
