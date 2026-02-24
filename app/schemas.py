@@ -96,6 +96,7 @@ ROUTE_COMMANDS = {
     "recommend": "recommender",
     "verbose": "setting",
     "sms": "sms",
+    "weather": "weather",
     "help": "help",
     "start": "help",
 }

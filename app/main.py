@@ -18,7 +18,7 @@ from .router import route
 from .workers import analyst_run, analyst_run_with_image, librarian_run, recommender_run, PAGE_SIZE
 from . import formatter as fmt
 from . import supabase_client
-from .scheduler import setup_scheduler
+from .scheduler import setup_scheduler, generate_weather_msg
 from .banter import maybe_banter
 
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +62,15 @@ async def _handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 await update.message.reply_text(f"🧃 {msg}")
             except Exception as e:
                 log.exception("SMS banter failed")
+                await _send(update, fmt.fmt_error(f"오류 발생: {e}"))
+            return
+
+        if action == "weather":
+            try:
+                msg = await generate_weather_msg()
+                await update.message.reply_text(f"🧃 {msg}")
+            except Exception as e:
+                log.exception("Weather banter failed")
                 await _send(update, fmt.fmt_error(f"오류 발생: {e}"))
             return
 
@@ -259,6 +268,7 @@ def main() -> None:
     app.add_handler(CommandHandler("recommend", _handle))
     app.add_handler(CommandHandler("verbose", _handle))
     app.add_handler(CommandHandler("sms", _handle))
+    app.add_handler(CommandHandler("weather", _handle))
     app.add_handler(CallbackQueryHandler(_page_callback, pattern=r"^(list|search):"))
     app.add_handler(MessageHandler(filters.PHOTO, _handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, _handle))
