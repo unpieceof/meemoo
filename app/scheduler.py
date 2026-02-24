@@ -118,8 +118,8 @@ def _get_date_info() -> str:
     return base
 
 
-async def _generate_morning_msg() -> str:
-    """Generate morning greeting with weather via Claude."""
+async def generate_weather_msg() -> str:
+    """Generate greeting with weather via Claude. Used by morning job & /weather."""
     date_info = _get_date_info()
     weather = await _get_weather_mapo()
 
@@ -177,7 +177,7 @@ async def _push_morning(app: Application) -> None:
         return
 
     try:
-        msg = await _generate_morning_msg()
+        msg = await generate_weather_msg()
     except Exception:
         log.exception("Morning greeting generation failed")
         return
