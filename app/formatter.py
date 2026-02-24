@@ -200,6 +200,7 @@ def fmt_help() -> str:
 
 💬 기타
 • /sms → 한 마디 잡담
+• /weather → 오늘 날씨 한 마디
 """
     )
 
