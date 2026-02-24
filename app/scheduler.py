@@ -71,37 +71,44 @@ async def _try_open_meteo() -> str | None:
                 params={
                     "latitude": 37.5538,
                     "longitude": 126.9097,
-                    "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
+                    "current": "weather_code",
+                    "daily": "temperature_2m_max,temperature_2m_min",
                     "timezone": "Asia/Seoul",
+                    "forecast_days": 1,
                 },
                 timeout=10,
             )
             resp.raise_for_status()
-            cur = resp.json()["current"]
+            data = resp.json()
+            cur = data["current"]
+            daily = data["daily"]
             cond = _WMO_KO.get(cur["weather_code"], "알 수 없음")
-            temp = cur["temperature_2m"]
-            humid = cur["relative_humidity_2m"]
-            wind = cur["wind_speed_10m"]
-            return f"{cond} {temp}°C 습도{humid}% 바람{wind}km/h"
+            temp_min = round(daily["temperature_2m_min"][0])
+            temp_max = round(daily["temperature_2m_max"][0])
+            return f"{cond} 최저{temp_min}°C 최고{temp_max}°C"
     except Exception as e:
         log.warning("Open-Meteo failed: %s", e)
         return None
 
 
 async def _try_wttr() -> str | None:
-    """wttr.in fallback."""
+    """wttr.in fallback (JSON format for min/max temp)."""
     try:
         async with httpx.AsyncClient(follow_redirects=True) as client:
             resp = await client.get(
-                "https://wttr.in/Mapo-gu,Seoul?format=%C+%t+%h+%w",
+                "https://wttr.in/Mapo-gu,Seoul?format=j1",
                 headers={"Accept-Language": "ko", "User-Agent": "meemoo-bot/1.0"},
                 timeout=10,
             )
             resp.raise_for_status()
-            text = resp.text.strip()
-            if text and "Unknown" not in text:
-                return text
-            return None
+            data = resp.json()
+            cur = data["current_condition"][0]
+            today = data["weather"][0]
+            code = int(cur["weatherCode"])
+            cond = _WMO_KO.get(code, "알 수 없음")
+            temp_min = int(today["mintempC"])
+            temp_max = int(today["maxtempC"])
+            return f"{cond} 최저{temp_min}°C 최고{temp_max}°C"
     except Exception as e:
         log.warning("wttr.in fallback failed: %s", e)
         return None
@@ -119,24 +126,26 @@ def _get_date_info() -> str:
 
 
 async def generate_weather_msg() -> str:
-    """Generate greeting with weather via Claude. Used by morning job & /weather."""
+    """Generate weather info + one-liner comment via Claude. Used by morning job & /weather."""
     date_info = _get_date_info()
     weather = await _get_weather_mapo()
 
     speaker = random.choice(["팀장", "분석가", "사서"])
     resp = await _anthropic.messages.create(
         model=CLAUDE_MODEL,
-        max_tokens=80,
+        max_tokens=60,
         system=(
-            "You are 케미담당(💖). Output EXACTLY one line of casual Korean (15~30자). "
+            "You are 케미담당(💖). Output EXACTLY one line of casual Korean (10~20자). "
             "No quotes, no extra lines, no explanations. "
             f"The speaker is fixed as {speaker}:. Use ONLY '{speaker}:' as prefix. "
-            "날짜와 날씨 정보를 자연스럽게 녹여서 아침 인사 한 마디. "
-            "기념일이 있으면 언급해줘. 날씨는 반드시 포함. "
+            "날씨 수치는 이미 별도 출력되므로 반복하지 말고, "
+            "오늘 날씨에 맞는 짧은 조언이나 감상 한 마디만. "
+            "기념일이 있으면 언급해줘. "
         ) + CHARACTER_RULES,
         messages=[{"role": "user", "content": f"날짜: {date_info}\n날씨(마포구): {weather}"}],
     )
-    return resp.content[0].text.strip().split("\n")[0].strip()
+    comment = resp.content[0].text.strip().split("\n")[0].strip()
+    return f"{weather}\n{comment}"
 
 
 def setup_scheduler(app: Application) -> AsyncIOScheduler:
