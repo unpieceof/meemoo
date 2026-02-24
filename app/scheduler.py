@@ -11,11 +11,11 @@ from telegram.ext import Application
 
 from . import supabase_client, formatter as fmt
 from .workers import recommender_run
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 from .config import ANTHROPIC_API_KEY, CLAUDE_MODEL
 from .schemas import CHARACTER_RULES
 
-_anthropic = Anthropic(api_key=ANTHROPIC_API_KEY)
+_anthropic = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
 log = logging.getLogger(__name__)
 
@@ -34,14 +34,15 @@ KR_HOLIDAYS = {
 }
 
 
-def _get_weather_mapo() -> str:
+async def _get_weather_mapo() -> str:
     """Fetch current weather for Mapo-gu via wttr.in (no API key)."""
     try:
-        resp = httpx.get(
-            "https://wttr.in/Mapo-gu,Seoul?format=%C+%t+%h+%w",
-            headers={"Accept-Language": "ko"},
-            timeout=10,
-        )
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                "https://wttr.in/Mapo-gu,Seoul?format=%C+%t+%h+%w",
+                headers={"Accept-Language": "ko"},
+                timeout=10,
+            )
         resp.raise_for_status()
         return resp.text.strip()
     except Exception as e:
@@ -63,10 +64,10 @@ def _get_date_info() -> str:
 async def _generate_morning_msg() -> str:
     """Generate morning greeting with weather via Claude."""
     date_info = _get_date_info()
-    weather = _get_weather_mapo()
+    weather = await _get_weather_mapo()
 
     speaker = random.choice(["팀장", "분석가", "사서"])
-    resp = _anthropic.messages.create(
+    resp = await _anthropic.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=80,
         system=(
