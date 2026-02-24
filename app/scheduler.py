@@ -34,20 +34,77 @@ KR_HOLIDAYS = {
 }
 
 
+# WMO weather code → Korean description
+_WMO_KO = {
+    0: "맑음",
+    1: "대체로 맑음", 2: "구름 조금", 3: "흐림",
+    45: "안개", 48: "안개",
+    51: "이슬비", 53: "이슬비", 55: "강한 이슬비",
+    56: "빙결 이슬비", 57: "빙결 이슬비",
+    61: "비", 63: "비", 65: "폭우",
+    66: "빙결 비", 67: "빙결 비",
+    71: "눈", 73: "눈", 75: "폭설",
+    77: "싸락눈",
+    80: "소나기", 81: "소나기", 82: "강한 소나기",
+    85: "눈보라", 86: "눈보라",
+    95: "뇌우", 96: "우박 뇌우", 99: "우박 뇌우",
+}
+
+
 async def _get_weather_mapo() -> str:
-    """Fetch current weather for Mapo-gu via wttr.in (no API key)."""
+    """Fetch weather for Mapo-gu. Primary: Open-Meteo, fallback: wttr.in."""
+    weather = await _try_open_meteo()
+    if weather:
+        return weather
+    weather = await _try_wttr()
+    if weather:
+        return weather
+    return "날씨 정보 없음"
+
+
+async def _try_open_meteo() -> str | None:
+    """Open-Meteo: free, no key, server-friendly."""
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             resp = await client.get(
-                "https://wttr.in/Mapo-gu,Seoul?format=%C+%t+%h+%w",
-                headers={"Accept-Language": "ko"},
+                "https://api.open-meteo.com/v1/forecast",
+                params={
+                    "latitude": 37.5538,
+                    "longitude": 126.9097,
+                    "current": "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
+                    "timezone": "Asia/Seoul",
+                },
                 timeout=10,
             )
-        resp.raise_for_status()
-        return resp.text.strip()
+            resp.raise_for_status()
+            cur = resp.json()["current"]
+            cond = _WMO_KO.get(cur["weather_code"], "알 수 없음")
+            temp = cur["temperature_2m"]
+            humid = cur["relative_humidity_2m"]
+            wind = cur["wind_speed_10m"]
+            return f"{cond} {temp}°C 습도{humid}% 바람{wind}km/h"
     except Exception as e:
-        log.warning("Weather fetch failed: %s", e)
-        return "날씨 정보 없음"
+        log.warning("Open-Meteo failed: %s", e)
+        return None
+
+
+async def _try_wttr() -> str | None:
+    """wttr.in fallback."""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            resp = await client.get(
+                "https://wttr.in/Mapo-gu,Seoul?format=%C+%t+%h+%w",
+                headers={"Accept-Language": "ko", "User-Agent": "meemoo-bot/1.0"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            text = resp.text.strip()
+            if text and "Unknown" not in text:
+                return text
+            return None
+    except Exception as e:
+        log.warning("wttr.in fallback failed: %s", e)
+        return None
 
 
 def _get_date_info() -> str:
