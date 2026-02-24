@@ -126,26 +126,25 @@ def _get_date_info() -> str:
 
 
 async def generate_weather_msg() -> str:
-    """Generate weather info + one-liner comment via Claude. Used by morning job & /weather."""
+    """Generate weather message via Claude in character voice. Used by morning job & /weather."""
     date_info = _get_date_info()
     weather = await _get_weather_mapo()
 
     speaker = random.choice(["팀장", "분석가", "사서"])
     resp = await _anthropic.messages.create(
         model=CLAUDE_MODEL,
-        max_tokens=60,
+        max_tokens=100,
         system=(
-            "You are 케미담당(💖). Output EXACTLY one line of casual Korean (10~20자). "
+            "You are 케미담당(💖). Output EXACTLY one line of casual Korean. "
             "No quotes, no extra lines, no explanations. "
             f"The speaker is fixed as {speaker}:. Use ONLY '{speaker}:' as prefix. "
-            "날씨 수치는 이미 별도 출력되므로 반복하지 말고, "
-            "오늘 날씨에 맞는 짧은 조언이나 감상 한 마디만. "
+            "날씨 정보(기후·최저·최고온도)를 캐릭터 말투로 자연스럽게 녹여서 말하고, "
+            "마지막에 오늘 날씨에 맞는 짧은 조언이나 감상 한 마디를 덧붙여. "
             "기념일이 있으면 언급해줘. "
         ) + CHARACTER_RULES,
         messages=[{"role": "user", "content": f"날짜: {date_info}\n날씨(마포구): {weather}"}],
     )
-    comment = resp.content[0].text.strip().split("\n")[0].strip()
-    return f"{weather}\n{comment}"
+    return resp.content[0].text.strip().split("\n")[0].strip()
 
 
 def setup_scheduler(app: Application) -> AsyncIOScheduler:
